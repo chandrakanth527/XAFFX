@@ -569,15 +569,20 @@
       installFab.classList.remove('show');
     });
 
-    // ─── Mock Data ───
+    // ─── Product Data (images served directly from Meesho CDN) ───
+    const MEESHO_CDN = 'https://images.meesho.com/images/products';
     const items = [
       {
         videoId: 'dnZfXH6Jrog',
         product: {
-          name: 'Hot Wheels Track Builder Race Crate Set',
+          name: 'Hot Wheels Die-Cast Toy Car Pack of 2',
           price: 349, mrp: 799, discount: 56,
           rating: 4.3, reviews: 2841,
-          images: ['https://picsum.photos/seed/toy1/400/500', 'https://picsum.photos/seed/toy1b/400/500', 'https://picsum.photos/seed/toy1c/400/500'],
+          images: [
+            `${MEESHO_CDN}/443349386/m8uip_512.webp?width=512`,
+            `${MEESHO_CDN}/101424176/ewrcv_512.webp?width=512`,
+            `${MEESHO_CDN}/101424176/lnwjr_512.webp?width=512`
+          ],
           affiliateUrl: '#',
           relatedVideos: ['eSkrn59YjJY', '0uC29Kw3BH8', 'jxp9qSchvzU', 'dnZfXH6Jrog', 'eSkrn59YjJY', '0uC29Kw3BH8']
         }
@@ -585,10 +590,14 @@
       {
         videoId: 'eSkrn59YjJY',
         product: {
-          name: 'Milton Thermosteel Flask 500ml - Stainless Steel',
+          name: 'Stainless Steel Vacuum Flask 500ml - Hot & Cold',
           price: 449, mrp: 999, discount: 55,
           rating: 4.5, reviews: 5632,
-          images: ['https://picsum.photos/seed/home1/400/500', 'https://picsum.photos/seed/home1b/400/500', 'https://picsum.photos/seed/home1c/400/500'],
+          images: [
+            `${MEESHO_CDN}/393797811/vond6_512.webp?width=512`,
+            `${MEESHO_CDN}/105996828/dqwky_512.webp?width=512`,
+            `${MEESHO_CDN}/105996828/jkhvj_512.webp?width=512`
+          ],
           affiliateUrl: '#',
           relatedVideos: ['dnZfXH6Jrog', '0uC29Kw3BH8', 'jxp9qSchvzU', 'eSkrn59YjJY', 'dnZfXH6Jrog', 'jxp9qSchvzU']
         }
@@ -596,10 +605,14 @@
       {
         videoId: '0uC29Kw3BH8',
         product: {
-          name: 'Wooden Montessori Shape Sorter Toy - Educational',
+          name: 'Premium Educational Toy Set - Kids Learning Kit',
           price: 279, mrp: 599, discount: 53,
           rating: 4.1, reviews: 987,
-          images: ['https://picsum.photos/seed/toy2/400/500', 'https://picsum.photos/seed/toy2b/400/500', 'https://picsum.photos/seed/toy2c/400/500'],
+          images: [
+            `${MEESHO_CDN}/104928558/6wn76_512.webp?width=512`,
+            `${MEESHO_CDN}/104928558/u4g19_512.webp?width=512`,
+            `${MEESHO_CDN}/101424176/sbv6n_512.webp?width=512`
+          ],
           affiliateUrl: '#',
           relatedVideos: ['dnZfXH6Jrog', 'eSkrn59YjJY', 'jxp9qSchvzU', '0uC29Kw3BH8', 'dnZfXH6Jrog', 'eSkrn59YjJY']
         }
@@ -607,10 +620,14 @@
       {
         videoId: 'jxp9qSchvzU',
         product: {
-          name: 'Prestige Non-Stick Dosa Tawa 28cm',
+          name: 'Non-Stick Aluminium Dosa Tawa 275mm Combo',
           price: 525, mrp: 1195, discount: 56,
           rating: 4.4, reviews: 3201,
-          images: ['https://picsum.photos/seed/kitchen1/400/500', 'https://picsum.photos/seed/kitchen1b/400/500', 'https://picsum.photos/seed/kitchen1c/400/500'],
+          images: [
+            `${MEESHO_CDN}/52763126/1j5bv_512.webp?width=512`,
+            `${MEESHO_CDN}/52763126/1x9am_512.webp?width=512`,
+            `${MEESHO_CDN}/100249037/6gwmf_512.webp?width=512`
+          ],
           affiliateUrl: '#',
           relatedVideos: ['dnZfXH6Jrog', 'eSkrn59YjJY', '0uC29Kw3BH8', 'jxp9qSchvzU', 'eSkrn59YjJY', 'dnZfXH6Jrog']
         }
