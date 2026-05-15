@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shorts Feed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+
+    .splash {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      gap: 16px;
+    }
+
+    .splash .play-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      backdrop-filter: blur(8px);
+    }
+
+    .splash:hover .play-icon { background: rgba(255,255,255,0.25); }
+    .splash .label { color: rgba(255,255,255,0.7); font-size: 15px; }
+
+    .feed {
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .feed::-webkit-scrollbar { display: none; }
+    .feed { scrollbar-width: none; }
+
+    .short {
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .short .player-wrap {
+      width: 100%;
+      max-width: 405px;
+      height: 100vh;
+      max-height: 720px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+
+    .short .player-wrap iframe {
+      background: #000;
+    }
+
+    /* Transparent overlay blocks hover from reaching iframe.
+       YouTube auto-hides its UI when no mouse interaction detected. */
+    .short .player-wrap .tap-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      cursor: pointer;
+    }
+
+
+    .counter {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      color: #fff;
+      font-size: 14px;
+      background: rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+
+    .mute-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mute-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .scroll-hint {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      z-index: 10;
+      animation: bounce 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.6; }
+      50% { transform: translateX(-50%) translateY(-8px); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash" id="splash">
+    <div class="play-icon">&#9654;</div>
+    <div class="label">Tap to start</div>
+  </div>
+
+  <button class="mute-btn" id="muteBtn" title="Mute">&#x1F50A;</button>
+  <div class="counter" id="counter">1 / 4</div>
+  <div class="scroll-hint" id="hint">Scroll down for more</div>
+
+  <div class="feed" id="feed">
+    <div class="short" data-index="0">
+      <div class="player-wrap"><div id="player-0"></div><div class="tap-overlay"></div></div>
+    </div>
+    <div class="short" data-index="1">
+      <div class="player-wrap"><div id="player-1"></div><div class="tap-overlay"></div></div>
+    </div>
+    <div class="short" data-index="2">
+      <div class="player-wrap"><div id="player-2"></div><div class="tap-overlay"></div></div>
+    </div>
+    <div class="short" data-index="3">
+      <div class="player-wrap"><div id="player-3"></div><div class="tap-overlay"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const videoIds = ['dnZfXH6Jrog', 'eSkrn59YjJY', '0uC29Kw3BH8', 'jxp9qSchvzU'];
+    const players = [];
+    const ready = [];
+    let currentIndex = 0;
+    let isMuted = false;
+    let started = false;
+
+    const muteBtn = document.getElementById('muteBtn');
+    const splash = document.getElementById('splash');
+    const feed = document.getElementById('feed');
+    const counter = document.getElementById('counter');
+    const hint = document.getElementById('hint');
+    const total = videoIds.length;
+
+    // Mute toggle
+    muteBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      muteBtn.innerHTML = isMuted ? '&#x1F507;' : '&#x1F50A;';
+      muteBtn.title = isMuted ? 'Unmute' : 'Mute';
+      const p = players[currentIndex];
+      if (p && ready[currentIndex]) {
+        isMuted ? p.mute() : p.unMute();
+      }
+    });
+
+    // Splash tap
+    splash.addEventListener('click', () => {
+      splash.style.display = 'none';
+      started = true;
+      if (players[0] && ready[0]) {
+        players[0].unMute();
+        players[0].setVolume(100);
+        players[0].seekTo(0);
+        players[0].playVideo();
+      }
+    });
+
+    // YouTube API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function () {
+      videoIds.forEach((id, i) => {
+        players[i] = new YT.Player(`player-${i}`, {
+          width: '100%',
+          height: '100%',
+          videoId: id,
+          playerVars: {
+            autoplay: 0,
+            mute: 1,
+            controls: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            rel: 0,
+            loop: 1,
+            playlist: id,
+            enablejsapi: 1,
+            origin: window.location.origin,
+            iv_load_policy: 3,
+            disablekb: 1,
+            fs: 0,
+            cc_load_policy: 0,
+            showinfo: 0
+          },
+          events: {
+            onReady: (e) => {
+              ready[i] = true;
+              e.target.cueVideoById({ videoId: id });
+              // Pre-buffer next video after current one is ready
+              if (i === 0) prebufferNext(1);
+            }
+          }
+        });
+      });
+    };
+
+    // Pre-buffer: silently play one video muted for 1.5s then pause
+    const buffered = new Set();
+    function prebufferNext(index) {
+      if (index < 0 || index >= total) return;
+      if (buffered.has(index)) return;
+      if (!players[index] || !ready[index]) {
+        // Retry once the player is ready
+        const check = setInterval(() => {
+          if (players[index] && ready[index]) {
+            clearInterval(check);
+            prebufferNext(index);
+          }
+        }, 200);
+        return;
+      }
+      buffered.add(index);
+      players[index].mute();
+      players[index].playVideo();
+      setTimeout(() => {
+        // Only pause if it's not the active video
+        if (index !== currentIndex) {
+          players[index].pauseVideo();
+        }
+      }, 1500);
+    }
+
+    function switchTo(index) {
+      if (index === currentIndex) return;
+      if (index < 0 || index >= total) return;
+
+      const prev = currentIndex;
+      currentIndex = index;
+
+      // Pause old (not stop — keep it buffered for back-scroll)
+      if (players[prev] && ready[prev]) {
+        players[prev].pauseVideo();
+        players[prev].mute();
+      }
+
+      // Play new — already buffered so should be instant
+      if (players[currentIndex] && ready[currentIndex]) {
+        players[currentIndex].seekTo(0);
+        if (!isMuted) {
+          players[currentIndex].unMute();
+          players[currentIndex].setVolume(100);
+        } else {
+          players[currentIndex].mute();
+        }
+        players[currentIndex].playVideo();
+        isPlaying = true;
+      }
+
+      // Pre-buffer the next one ahead
+      prebufferNext(index + 1);
+      // Also pre-buffer one behind for back-scroll
+      prebufferNext(index - 1);
+    }
+
+    // Tap to pause/play
+    let isPlaying = true;
+
+    document.querySelectorAll('.tap-overlay').forEach((overlay) => {
+      overlay.addEventListener('click', () => {
+        const p = players[currentIndex];
+        if (!p || !ready[currentIndex]) return;
+
+        if (isPlaying) {
+          p.pauseVideo();
+          isPlaying = false;
+        } else {
+          p.playVideo();
+          isPlaying = true;
+        }
+      });
+    });
+
+    // Scroll detection using IntersectionObserver for snappier response
+    let scrollTimeout;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          const index = parseInt(entry.target.dataset.index);
+          counter.textContent = `${index + 1} / ${total}`;
+          hint.style.opacity = index >= total - 1 ? '0' : '1';
+          // Small debounce to avoid rapid switching during scroll
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => switchTo(index), 50);
+        }
+      });
+    }, {
+      root: feed,
+      threshold: 0.6
+    });
+
+    document.querySelectorAll('.short').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>

@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ShopShorts</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      color: #fff;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* ─── Feed ─── */
+    .feed {
+      height: 100vh; overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .feed::-webkit-scrollbar { display: none; }
+    .feed { scrollbar-width: none; }
+
+    .card {
+      height: 100vh; scroll-snap-align: start;
+      display: flex; align-items: center; justify-content: center;
+      background: #000; position: relative; overflow: hidden;
+    }
+
+    .player-wrap {
+      width: calc(100% - 12px); max-width: 420px;
+      height: calc(100vh - 12px);
+      border-radius: 10px;
+      overflow: hidden; background: #111;
+      position: relative;
+    }
+
+    .player-wrap iframe {
+      position: absolute;
+      border: none;
+      pointer-events: none;
+    }
+
+    .player-wrap .tap-overlay {
+      position: absolute; inset: 0; z-index: 3; cursor: pointer;
+    }
+
+    /* ─── Bottom gradient strip ─── */
+    .bottom-gradient {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 4;
+      height: clamp(80px, 20vh, 160px);
+      background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* ─── Product Card on feed ─── */
+    .product-card {
+      position: absolute; bottom: 0; right: 0; left: 0; z-index: 5;
+      padding: 0 clamp(6px, 2.5vw, 10px) calc(env(safe-area-inset-bottom, 0px) + clamp(20px, 8vh, 60px));
+      pointer-events: none;
+    }
+
+    .product-card-inner {
+      background: rgba(15, 15, 15, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: clamp(8px, 3vw, 14px);
+      padding: clamp(8px, 2.5vw, 12px);
+      pointer-events: auto;
+      display: flex; align-items: center; gap: clamp(6px, 2.5vw, 12px);
+    }
+
+    .product-card-inner .product-details {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: clamp(2px, 0.8vh, 4px);
+    }
+
+    .product-card-inner .product-name {
+      font-size: clamp(10px, 3.2vw, 13px); font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .product-card-inner .price-row {
+      display: flex; align-items: baseline; gap: clamp(4px, 1.5vw, 8px);
+    }
+    .product-card-inner .price {
+      font-size: clamp(16px, 5.5vw, 24px); font-weight: 800; letter-spacing: -0.5px;
+    }
+    .product-card-inner .mrp {
+      font-size: clamp(9px, 2.8vw, 12px); color: rgba(255,255,255,0.35);
+      text-decoration: line-through;
+    }
+    .product-card-inner .discount {
+      font-size: clamp(8px, 2.5vw, 11px); color: #4ade80; font-weight: 700;
+    }
+
+    .product-card-inner .rating-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: clamp(8px, 2.5vw, 11px); color: rgba(255,255,255,0.5);
+    }
+    .product-card-inner .rating-pill .star {
+      background: #16a34a; color: #fff; padding: 1px clamp(3px, 1.2vw, 6px);
+      border-radius: 3px; font-size: clamp(7px, 2.2vw, 10px); font-weight: 700;
+    }
+
+    .product-card-inner .buy-cta {
+      padding: clamp(7px, 2.2vw, 10px) clamp(14px, 5vw, 24px);
+      border: none; border-radius: clamp(6px, 2vw, 10px);
+      background: linear-gradient(135deg, #e11d48, #f43f5e);
+      color: #fff; font-size: clamp(10px, 3vw, 13px); font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .product-card-inner .buy-cta:active { transform: scale(0.96); }
+
+    /* ─── Mute/Unmute toggle button (feed) ─── */
+    .mute-btn {
+      position: absolute; top: 12px; right: 12px; z-index: 6;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+      pointer-events: auto;
+    }
+    .mute-btn:active { background: rgba(0,0,0,0.65); }
+    .mute-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* ─── Product Screen (slides from right) ─── */
+    .product-screen {
+      position: absolute; inset: 0; z-index: 10;
+      background: #111;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      overflow: hidden;
+    }
+    .product-screen.open { transform: translateX(0); }
+
+    /* Floating back button — always visible on Screen 2 */
+    .ps-float-back {
+      position: absolute;
+      top: clamp(10px, 3vw, 16px);
+      left: clamp(10px, 3vw, 16px);
+      z-index: 15;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: none;
+      color: #fff;
+      width: clamp(32px, 9vw, 40px);
+      height: clamp(32px, 9vw, 40px);
+      border-radius: 50%;
+      font-size: clamp(16px, 4.5vw, 20px);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ps-float-back:active { background: rgba(0,0,0,0.7); }
+
+    /* Snap-scroll container */
+    .ps-scroll {
+      height: 100%; overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .ps-scroll::-webkit-scrollbar { display: none; }
+
+    /* ─── Product section (first snap child) ─── */
+    .ps-product-section {
+      height: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: flex;
+      flex-direction: column;
+      background: #111;
+      position: relative;
+    }
+
+    /* Image carousel */
+    .ps-images {
+      width: 100%; position: relative;
+      overflow: hidden; background: #1a1a1a;
+      flex-shrink: 0;
+    }
+    .ps-images-track {
+      display: flex; transition: transform 0.3s ease;
+    }
+    .ps-images-track img {
+      width: 100%; height: clamp(200px, 50vw, 320px);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .ps-dots {
+      display: flex; justify-content: center; gap: 6px;
+      padding: clamp(8px, 2vw, 12px) 0;
+    }
+    .ps-dots span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      transition: background 0.2s;
+    }
+    .ps-dots span.active { background: #fff; }
+
+    /* Product info */
+    .ps-info {
+      padding: clamp(12px, 3.5vw, 20px) clamp(14px, 4vw, 20px);
+    }
+    .ps-info .ps-name {
+      font-size: clamp(14px, 4vw, 18px); font-weight: 600;
+      line-height: 1.4; margin-bottom: clamp(6px, 1.5vw, 10px);
+      color: rgba(255,255,255,0.95);
+    }
+    .ps-info .ps-price-row {
+      display: flex; align-items: baseline; gap: clamp(6px, 2vw, 10px);
+      margin-bottom: clamp(4px, 1.2vw, 8px);
+    }
+    .ps-info .ps-price {
+      font-size: clamp(22px, 6.5vw, 30px); font-weight: 800; letter-spacing: -0.5px;
+    }
+    .ps-info .ps-mrp {
+      font-size: clamp(12px, 3.2vw, 15px); color: rgba(255,255,255,0.35);
+      text-decoration: line-through;
+    }
+    .ps-info .ps-discount {
+      font-size: clamp(11px, 3vw, 14px); color: #4ade80; font-weight: 700;
+    }
+    .ps-info .ps-rating {
+      display: flex; align-items: center; gap: 8px;
+      font-size: clamp(11px, 3vw, 13px); color: rgba(255,255,255,0.5);
+    }
+    .ps-info .ps-rating .star-badge {
+      background: #16a34a; color: #fff; padding: 2px clamp(5px, 1.5vw, 8px);
+      border-radius: 4px; font-size: clamp(10px, 2.8vw, 12px); font-weight: 700;
+    }
+
+    /* Buy CTA */
+    .ps-buy {
+      display: block; width: calc(100% - clamp(28px, 8vw, 40px));
+      margin: 0 auto;
+      padding: clamp(12px, 3.5vw, 16px);
+      border: none; border-radius: clamp(10px, 3vw, 14px);
+      background: linear-gradient(135deg, #e11d48, #f43f5e);
+      color: #fff; font-size: clamp(14px, 4vw, 17px); font-weight: 700;
+      cursor: pointer; transition: transform 0.1s;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .ps-buy:active { transform: scale(0.97); }
+
+    /* Watch reviews hint */
+    .ps-watch-hint {
+      margin-top: auto;
+      text-align: center;
+      padding: clamp(16px, 4vw, 28px);
+      color: rgba(255,255,255,0.4);
+      font-size: clamp(11px, 3vw, 13px);
+    }
+    .ps-watch-hint span {
+      display: inline-block;
+      animation: bounceUp 1.5s ease-in-out infinite;
+    }
+    @keyframes bounceUp {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* ─── Video cards in Screen 2 (snap children) ─── */
+    .ps-video-card {
+      height: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+    .ps-video-card iframe {
+      position: absolute; border: none; pointer-events: none;
+    }
+    .ps-video-card .rv-tap {
+      position: absolute; inset: 0; z-index: 3; cursor: pointer;
+    }
+
+    /* Top product widget on video cards */
+    .rv-top-widget {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+      display: flex; align-items: center;
+      gap: clamp(8px, 2.5vw, 12px);
+      padding: clamp(12px, 3.5vw, 18px);
+      padding-left: clamp(52px, 14vw, 64px); /* space for floating back btn */
+      background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 70%, transparent 100%);
+      pointer-events: none;
+    }
+    .rv-top-widget img {
+      width: clamp(32px, 9vw, 42px);
+      height: clamp(32px, 9vw, 42px);
+      border-radius: 6px; object-fit: cover;
+    }
+    .rv-top-widget .rv-w-info {
+      flex: 1; min-width: 0;
+    }
+    .rv-top-widget .rv-w-name {
+      font-size: clamp(10px, 2.8vw, 12px); font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: rgba(255,255,255,0.9); line-height: 1.3;
+    }
+    .rv-top-widget .rv-w-price {
+      font-size: clamp(13px, 3.8vw, 16px); font-weight: 800;
+    }
+
+    /* Mute button on video cards */
+    .rv-mute {
+      position: absolute;
+      top: clamp(10px, 3vw, 16px);
+      right: clamp(10px, 3vw, 16px);
+      z-index: 6;
+      width: clamp(32px, 9vw, 40px);
+      height: clamp(32px, 9vw, 40px);
+      border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: auto;
+    }
+    .rv-mute svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* Bottom gradient on video cards */
+    .rv-bottom-grad {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 4;
+      height: clamp(60px, 15vh, 120px);
+      background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+
+  <!-- Feed -->
+  <div class="feed" id="feed"></div>
+
+  <script>
+    // ─── Mock Data ───
+    const items = [
+      {
+        videoId: 'dnZfXH6Jrog',
+        product: {
+          name: 'Hot Wheels Track Builder Race Crate Set',
+          price: 349, mrp: 799, discount: 56,
+          rating: 4.3, reviews: 2841,
+          images: ['https://picsum.photos/seed/toy1/400/500', 'https://picsum.photos/seed/toy1b/400/500', 'https://picsum.photos/seed/toy1c/400/500'],
+          affiliateUrl: '#',
+          relatedVideos: ['eSkrn59YjJY', '0uC29Kw3BH8', 'jxp9qSchvzU', 'dnZfXH6Jrog', 'eSkrn59YjJY', '0uC29Kw3BH8']
+        }
+      },
+      {
+        videoId: 'eSkrn59YjJY',
+        product: {
+          name: 'Milton Thermosteel Flask 500ml - Stainless Steel',
+          price: 449, mrp: 999, discount: 55,
+          rating: 4.5, reviews: 5632,
+          images: ['https://picsum.photos/seed/home1/400/500', 'https://picsum.photos/seed/home1b/400/500', 'https://picsum.photos/seed/home1c/400/500'],
+          affiliateUrl: '#',
+          relatedVideos: ['dnZfXH6Jrog', '0uC29Kw3BH8', 'jxp9qSchvzU', 'eSkrn59YjJY', 'dnZfXH6Jrog', 'jxp9qSchvzU']
+        }
+      },
+      {
+        videoId: '0uC29Kw3BH8',
+        product: {
+          name: 'Wooden Montessori Shape Sorter Toy - Educational',
+          price: 279, mrp: 599, discount: 53,
+          rating: 4.1, reviews: 987,
+          images: ['https://picsum.photos/seed/toy2/400/500', 'https://picsum.photos/seed/toy2b/400/500', 'https://picsum.photos/seed/toy2c/400/500'],
+          affiliateUrl: '#',
+          relatedVideos: ['dnZfXH6Jrog', 'eSkrn59YjJY', 'jxp9qSchvzU', '0uC29Kw3BH8', 'dnZfXH6Jrog', 'eSkrn59YjJY']
+        }
+      },
+      {
+        videoId: 'jxp9qSchvzU',
+        product: {
+          name: 'Prestige Non-Stick Dosa Tawa 28cm',
+          price: 525, mrp: 1195, discount: 56,
+          rating: 4.4, reviews: 3201,
+          images: ['https://picsum.photos/seed/kitchen1/400/500', 'https://picsum.photos/seed/kitchen1b/400/500', 'https://picsum.photos/seed/kitchen1c/400/500'],
+          affiliateUrl: '#',
+          relatedVideos: ['dnZfXH6Jrog', 'eSkrn59YjJY', '0uC29Kw3BH8', 'jxp9qSchvzU', 'eSkrn59YjJY', 'dnZfXH6Jrog']
+        }
+      }
+    ];
+
+    // ─── Build Feed Cards ───
+    const feed = document.getElementById('feed');
+
+    items.forEach((item, i) => {
+      const p = item.product;
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.index = i;
+      card.innerHTML = `
+        <div class="player-wrap">
+          <div id="player-${i}"></div>
+          <div class="tap-overlay" data-index="${i}"></div>
+
+          <button class="mute-btn" data-index="${i}">
+            <svg viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 8.18v2.06l2.43 2.43c.04-.22.07-.44.07-.67zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.96 8.96 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+          </button>
+
+          <div class="bottom-gradient"></div>
+
+          <div class="product-card">
+            <div class="product-card-inner" data-index="${i}">
+              <div class="product-details">
+                <div class="product-name">${p.name}</div>
+                <div class="price-row">
+                  <span class="price">\u20B9${p.price}</span>
+                  <span class="mrp">\u20B9${p.mrp}</span>
+                  <span class="discount">${p.discount}% off</span>
+                </div>
+                <div class="rating-pill">
+                  <span class="star">\u2605 ${p.rating}</span>
+                  <span>${p.reviews.toLocaleString()} reviews</span>
+                </div>
+              </div>
+              <button class="buy-cta" data-index="${i}">Buy Now</button>
+            </div>
+          </div>
+
+          <div class="product-screen" id="ps-${i}">
+            <button class="ps-float-back" data-index="${i}">\u2190</button>
+            <div class="ps-scroll" id="ps-scroll-${i}">
+              <div class="ps-product-section">
+                <div class="ps-images">
+                  <div class="ps-images-track" data-index="${i}">
+                    ${p.images.map(img => `<img src="${img}" alt="${p.name}">`).join('')}
+                  </div>
+                  <div class="ps-dots" data-index="${i}">
+                    ${p.images.map((_, idx) => `<span class="${idx === 0 ? 'active' : ''}" data-dot="${idx}"></span>`).join('')}
+                  </div>
+                </div>
+                <div class="ps-info">
+                  <div class="ps-name">${p.name}</div>
+                  <div class="ps-price-row">
+                    <span class="ps-price">\u20B9${p.price}</span>
+                    <span class="ps-mrp">\u20B9${p.mrp}</span>
+                    <span class="ps-discount">${p.discount}% off</span>
+                  </div>
+                  <div class="ps-rating">
+                    <span class="star-badge">\u2605 ${p.rating}</span>
+                    <span>${p.reviews.toLocaleString()} reviews</span>
+                  </div>
+                </div>
+                <button class="ps-buy" onclick="window.open('${p.affiliateUrl}')">Buy on Meesho \u2192</button>
+                <div class="ps-watch-hint"><span>\u2191 Watch reviews</span></div>
+              </div>
+              ${p.relatedVideos.map((vid, vi) => `
+                <div class="ps-video-card" data-vid-index="${vi}" data-video-id="${vid}" data-product-index="${i}">
+                  <div id="rv-player-${i}-${vi}"></div>
+                  <div class="rv-tap" data-product-index="${i}" data-vid-index="${vi}"></div>
+                  <div class="rv-top-widget">
+                    <img src="${p.images[0]}" alt="${p.name}">
+                    <div class="rv-w-info">
+                      <div class="rv-w-name">${p.name}</div>
+                      <div class="rv-w-price">\u20B9${p.price}</div>
+                    </div>
+                  </div>
+                  <button class="rv-mute" data-product-index="${i}" data-vid-index="${vi}">
+                    <svg viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 8.18v2.06l2.43 2.43c.04-.22.07-.44.07-.67zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.96 8.96 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                  </button>
+                  <div class="rv-bottom-grad"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      feed.appendChild(card);
+    });
+
+    // ─── State ───
+    const players = [];
+    const ready = [];
+    let currentIndex = 0;
+    let isMuted = true;
+    let isPlaying = true;
+    const total = items.length;
+    const buffered = new Set();
+
+    // ─── Mute/Unmute toggle (feed) ───
+    const mutedPath = 'M16.5 12A4.5 4.5 0 0 0 14 8.18v2.06l2.43 2.43c.04-.22.07-.44.07-.67zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.96 8.96 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z';
+    const unmutedPath = 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.18v7.64c1.5-.71 2.5-2.24 2.5-3.82zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+
+    function updateFeedMuteIcons() {
+      const path = isMuted ? mutedPath : unmutedPath;
+      document.querySelectorAll('.mute-btn svg').forEach(svg => {
+        svg.innerHTML = '<path d="' + path + '"/>';
+      });
+    }
+
+    document.querySelectorAll('.mute-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const p = players[currentIndex];
+        if (!p || !ready[currentIndex]) return;
+        if (isMuted) {
+          isMuted = false;
+          p.unMute();
+          p.setVolume(100);
+        } else {
+          isMuted = true;
+          p.mute();
+        }
+        updateFeedMuteIcons();
+      });
+    });
+
+    // ─── YouTube Player (feed) ───
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function () {
+      items.forEach((item, i) => {
+        players[i] = new YT.Player(`player-${i}`, {
+          width: '100%', height: '100%',
+          videoId: item.videoId,
+          playerVars: {
+            autoplay: i === 0 ? 1 : 0, mute: 1, controls: 0, modestbranding: 1,
+            playsinline: 1, rel: 0,
+            enablejsapi: 1, origin: window.location.origin,
+            iv_load_policy: 3, disablekb: 1, fs: 0,
+            cc_load_policy: 0, showinfo: 0
+          },
+          events: {
+            onReady: (e) => {
+              ready[i] = true;
+              if (i === 0) {
+                e.target.playVideo();
+                prebufferNext(1);
+              } else {
+                e.target.cueVideoById({ videoId: item.videoId });
+              }
+            },
+            onStateChange: (e) => {
+              if (e.data === YT.PlayerState.ENDED && i === currentIndex) {
+                e.target.seekTo(0);
+                e.target.playVideo();
+              }
+            }
+          }
+        });
+      });
+
+      // Set up review video observers after YT API is ready
+      setupAllReviewObservers();
+    };
+
+    function prebufferNext(index) {
+      if (index < 0 || index >= total || buffered.has(index)) return;
+      if (!players[index] || !ready[index]) {
+        const check = setInterval(() => {
+          if (players[index] && ready[index]) { clearInterval(check); prebufferNext(index); }
+        }, 200);
+        return;
+      }
+      buffered.add(index);
+      players[index].mute();
+      players[index].playVideo();
+      setTimeout(() => { if (index !== currentIndex) players[index].pauseVideo(); }, 1500);
+    }
+
+    function switchTo(index) {
+      if (index === currentIndex || index < 0 || index >= total) return;
+      const prev = currentIndex;
+      currentIndex = index;
+      closeProductScreen(prev);
+      if (players[prev] && ready[prev]) { players[prev].pauseVideo(); players[prev].mute(); }
+      if (players[currentIndex] && ready[currentIndex]) {
+        players[currentIndex].seekTo(0);
+        if (!isMuted) {
+          players[currentIndex].unMute();
+          players[currentIndex].setVolume(100);
+        }
+        players[currentIndex].playVideo();
+        isPlaying = true;
+      }
+      prebufferNext(index + 1);
+      prebufferNext(index - 1);
+    }
+
+    // ─── Tap overlay: pause/play (feed) ───
+    document.querySelectorAll('.tap-overlay').forEach(el => {
+      el.addEventListener('click', () => {
+        const p = players[currentIndex];
+        if (!p || !ready[currentIndex]) return;
+        if (isPlaying) { p.pauseVideo(); isPlaying = false; }
+        else { p.playVideo(); isPlaying = true; }
+      });
+    });
+
+    // ─── Product Screen open/close ───
+    function openProductScreen(i) {
+      const ps = document.getElementById(`ps-${i}`);
+      ps.classList.add('open');
+      const scroll = document.getElementById(`ps-scroll-${i}`);
+      scroll.scrollTop = 0;
+      if (players[currentIndex] && ready[currentIndex]) players[currentIndex].pauseVideo();
+    }
+
+    function closeProductScreen(i) {
+      deactivateReviewVideos();
+      document.getElementById(`ps-${i}`).classList.remove('open');
+    }
+
+    function resumePlayback() {
+      if (players[currentIndex] && ready[currentIndex]) {
+        players[currentIndex].playVideo();
+        isPlaying = true;
+      }
+    }
+
+    // Floating back buttons
+    document.querySelectorAll('.ps-float-back').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(el.dataset.index);
+        closeProductScreen(i);
+        resumePlayback();
+      });
+    });
+
+    // Buy CTA opens product screen
+    document.querySelectorAll('.buy-cta').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openProductScreen(parseInt(el.dataset.index));
+      });
+    });
+
+    // ─── Swipe gestures ───
+    let touchStartX = 0, touchStartY = 0;
+
+    // Swipe left on feed → open product screen
+    document.querySelectorAll('.tap-overlay').forEach(el => {
+      el.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      el.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (dx < -60 && Math.abs(dy) < Math.abs(dx)) {
+          openProductScreen(parseInt(el.dataset.index));
+        }
+      }, { passive: true });
+    });
+
+    // Mouse drag on feed → open product screen
+    document.querySelectorAll('.tap-overlay').forEach(el => {
+      let mouseDown = false, startX = 0, startY = 0;
+      el.addEventListener('mousedown', (e) => { mouseDown = true; startX = e.clientX; startY = e.clientY; });
+      el.addEventListener('mouseup', (e) => {
+        if (!mouseDown) return;
+        mouseDown = false;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (dx < -60 && Math.abs(dy) < Math.abs(dx)) {
+          openProductScreen(parseInt(el.dataset.index));
+        }
+      });
+    });
+
+    // Swipe right on product screen → close
+    document.querySelectorAll('.ps-scroll').forEach(el => {
+      let psStartX = 0, psStartY = 0;
+      el.addEventListener('touchstart', (e) => {
+        psStartX = e.touches[0].clientX;
+        psStartY = e.touches[0].clientY;
+      }, { passive: true });
+      el.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - psStartX;
+        const dy = e.changedTouches[0].clientY - psStartY;
+        if (dx > 80 && Math.abs(dy) < Math.abs(dx)) {
+          const i = parseInt(el.id.replace('ps-scroll-', ''));
+          closeProductScreen(i);
+          resumePlayback();
+        }
+      }, { passive: true });
+    });
+
+    // ─── Scroll left (trackpad/wheel) opens/closes product screen ───
+    let wheelAccum = 0, wheelTimer;
+    feed.addEventListener('wheel', (e) => {
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+      if (dx === 0) return;
+      wheelAccum += dx;
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => { wheelAccum = 0; }, 300);
+      const psOpen = document.getElementById(`ps-${currentIndex}`).classList.contains('open');
+      if (wheelAccum > 80 && !psOpen) { wheelAccum = 0; openProductScreen(currentIndex); }
+      else if (wheelAccum < -80 && psOpen) {
+        wheelAccum = 0; closeProductScreen(currentIndex);
+        resumePlayback();
+      }
+    }, { passive: true });
+
+    // ─── Image carousel swipe ───
+    document.querySelectorAll('.ps-images-track').forEach(track => {
+      const i = parseInt(track.dataset.index);
+      const imgCount = items[i].product.images.length;
+      let currentImg = 0;
+      let imgStartX = 0;
+
+      track.addEventListener('touchstart', (e) => {
+        imgStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      track.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - imgStartX;
+        if (dx < -40 && currentImg < imgCount - 1) currentImg++;
+        else if (dx > 40 && currentImg > 0) currentImg--;
+        track.style.transform = `translateX(-${currentImg * 100}%)`;
+        const dots = track.parentElement.querySelector('.ps-dots');
+        dots.querySelectorAll('span').forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === currentImg);
+        });
+      }, { passive: true });
+    });
+
+    // ─── Review Videos (snap-scroll in Screen 2) ───
+    const rvPlayers = {};   // keyed by "productIdx-vidIdx"
+    const rvReady = {};
+    let rvActiveKey = null; // currently playing review video key
+    let rvPlaying = false;
+    let rvMuted = true;
+
+    function rvKey(pi, vi) { return `${pi}-${vi}`; }
+
+    function activateVideoCard(productIdx, vidIdx) {
+      const key = rvKey(productIdx, vidIdx);
+      if (key === rvActiveKey) return;
+
+      // Pause previous
+      if (rvActiveKey && rvPlayers[rvActiveKey] && rvReady[rvActiveKey]) {
+        rvPlayers[rvActiveKey].pauseVideo();
+      }
+
+      rvActiveKey = key;
+      rvPlaying = true;
+
+      const card = document.querySelector(`.ps-video-card[data-product-index="${productIdx}"][data-vid-index="${vidIdx}"]`);
+      const videoId = card.dataset.videoId;
+
+      if (!rvPlayers[key]) {
+        // Create player
+        rvPlayers[key] = new YT.Player(`rv-player-${productIdx}-${vidIdx}`, {
+          width: '100%', height: '100%',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1, mute: 1, controls: 0, modestbranding: 1,
+            playsinline: 1, rel: 0, enablejsapi: 1,
+            origin: window.location.origin,
+            iv_load_policy: 3, disablekb: 1, fs: 0,
+            cc_load_policy: 0, showinfo: 0
+          },
+          events: {
+            onReady: () => {
+              rvReady[key] = true;
+              rvPlayers[key].playVideo();
+              if (!rvMuted) {
+                rvPlayers[key].unMute();
+                rvPlayers[key].setVolume(100);
+              }
+              fitVideoCardIframe(card);
+              updateRvMuteIcons();
+            },
+            onStateChange: (e) => {
+              if (e.data === YT.PlayerState.ENDED) {
+                e.target.seekTo(0);
+                e.target.playVideo();
+              }
+            }
+          }
+        });
+      } else if (rvReady[key]) {
+        rvPlayers[key].seekTo(0);
+        rvPlayers[key].playVideo();
+        if (rvMuted) rvPlayers[key].mute();
+        else { rvPlayers[key].unMute(); rvPlayers[key].setVolume(100); }
+      }
+    }
+
+    function deactivateReviewVideos() {
+      if (rvActiveKey && rvPlayers[rvActiveKey] && rvReady[rvActiveKey]) {
+        rvPlayers[rvActiveKey].pauseVideo();
+      }
+      rvActiveKey = null;
+      rvPlaying = false;
+    }
+
+    function fitVideoCardIframe(card) {
+      const iframe = card.querySelector('iframe');
+      if (!iframe) return;
+      const cw = card.clientWidth;
+      const ch = card.clientHeight;
+      const videoRatio = 9 / 16;
+      let iw, ih;
+      if (cw / ch < videoRatio) { iw = cw; ih = cw / videoRatio; }
+      else { ih = ch; iw = ch * videoRatio; }
+      const totalCrop = YT_TOP_CROP + YT_BOT_CROP;
+      const scale = (ih + totalCrop) / ih;
+      iw = iw * scale;
+      ih = ih + totalCrop;
+      iframe.style.width = iw + 'px';
+      iframe.style.height = ih + 'px';
+      iframe.style.left = (cw - iw) / 2 + 'px';
+      iframe.style.top = (ch - ih) / 2 - (YT_TOP_CROP - YT_BOT_CROP) / 2 + 'px';
+    }
+
+    function updateRvMuteIcons() {
+      const path = rvMuted ? mutedPath : unmutedPath;
+      document.querySelectorAll('.rv-mute svg').forEach(svg => {
+        svg.innerHTML = '<path d="' + path + '"/>';
+      });
+    }
+
+    // Tap to pause/play on video cards
+    document.querySelectorAll('.rv-tap').forEach(tap => {
+      tap.addEventListener('click', () => {
+        if (!rvActiveKey || !rvPlayers[rvActiveKey] || !rvReady[rvActiveKey]) return;
+        if (rvPlaying) { rvPlayers[rvActiveKey].pauseVideo(); rvPlaying = false; }
+        else { rvPlayers[rvActiveKey].playVideo(); rvPlaying = true; }
+      });
+    });
+
+    // Mute buttons on video cards
+    document.querySelectorAll('.rv-mute').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!rvActiveKey || !rvPlayers[rvActiveKey] || !rvReady[rvActiveKey]) return;
+        if (rvMuted) {
+          rvMuted = false;
+          rvPlayers[rvActiveKey].unMute();
+          rvPlayers[rvActiveKey].setVolume(100);
+        } else {
+          rvMuted = true;
+          rvPlayers[rvActiveKey].mute();
+        }
+        updateRvMuteIcons();
+      });
+    });
+
+    // ─── IntersectionObserver for review video cards ───
+    function setupAllReviewObservers() {
+      items.forEach((_, i) => {
+        const scroll = document.getElementById(`ps-scroll-${i}`);
+        const productSection = scroll.querySelector('.ps-product-section');
+        const videoCards = scroll.querySelectorAll('.ps-video-card');
+
+        // When product section is visible → deactivate videos
+        const prodObs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            const ps = document.getElementById(`ps-${i}`);
+            if (!ps.classList.contains('open')) return;
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+              deactivateReviewVideos();
+            }
+          });
+        }, { root: scroll, threshold: [0.5] });
+        prodObs.observe(productSection);
+
+        // When video card is visible → activate it
+        const vidObs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            const ps = document.getElementById(`ps-${i}`);
+            if (!ps.classList.contains('open')) return;
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+              const vi = parseInt(entry.target.dataset.vidIndex);
+              activateVideoCard(i, vi);
+            }
+          });
+        }, { root: scroll, threshold: [0.6] });
+        videoCards.forEach(card => vidObs.observe(card));
+      });
+    }
+
+    // ─── Scroll detection (feed) ───
+    let scrollTimeout;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          const index = parseInt(entry.target.dataset.index);
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => switchTo(index), 50);
+        }
+      });
+    }, { root: feed, threshold: 0.6 });
+
+    document.querySelectorAll('.card').forEach(el => observer.observe(el));
+
+    // ─── Contain-fit iframes: fit 9:16 video inside player-wrap, crop only YT UI ───
+    const YT_TOP_CROP = 60;
+    const YT_BOT_CROP = 40;
+
+    function fitIframes() {
+      document.querySelectorAll('.player-wrap').forEach(wrap => {
+        const iframe = wrap.querySelector(':scope > iframe, :scope > div > iframe');
+        if (!iframe) return;
+        // Only fit direct feed player iframes, not product screen ones
+        if (iframe.closest('.product-screen')) return;
+        const cw = wrap.clientWidth;
+        const ch = wrap.clientHeight;
+        const videoRatio = 9 / 16;
+        let iw, ih;
+        if (cw / ch < videoRatio) { iw = cw; ih = cw / videoRatio; }
+        else { ih = ch; iw = ch * videoRatio; }
+        const totalCrop = YT_TOP_CROP + YT_BOT_CROP;
+        const scale = (ih + totalCrop) / ih;
+        iw = iw * scale;
+        ih = ih + totalCrop;
+        iframe.style.width = iw + 'px';
+        iframe.style.height = ih + 'px';
+        iframe.style.left = (cw - iw) / 2 + 'px';
+        iframe.style.top = (ch - ih) / 2 - (YT_TOP_CROP - YT_BOT_CROP) / 2 + 'px';
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      fitIframes();
+      // Refit active review video card
+      if (rvActiveKey) {
+        const [pi, vi] = rvActiveKey.split('-').map(Number);
+        const card = document.querySelector(`.ps-video-card[data-product-index="${pi}"][data-vid-index="${vi}"]`);
+        if (card) fitVideoCardIframe(card);
+      }
+    });
+
+    const fitCheck = setInterval(() => {
+      if (document.querySelector('.player-wrap iframe')) { fitIframes(); clearInterval(fitCheck); }
+    }, 200);
+  </script>
+</body>
+</html>
