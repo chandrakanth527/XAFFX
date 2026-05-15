@@ -40,11 +40,18 @@
     }
 
     .player-wrap {
-      width: calc(100% - 12px); max-width: 420px;
-      height: calc(100vh - 12px);
-      border-radius: 10px;
+      width: 100%; max-width: 420px;
+      height: 100vh;
       overflow: hidden; background: #111;
       position: relative;
+    }
+    /* Desktop: add slight inset + rounded corners */
+    @media (min-width: 481px) {
+      .player-wrap {
+        width: calc(100% - 12px);
+        height: calc(100vh - 12px);
+        border-radius: 10px;
+      }
     }
 
     .player-wrap iframe {
@@ -352,113 +359,100 @@
       pointer-events: none;
     }
 
-    /* ─── Install / Save as Light App Banner ─── */
-    .install-banner {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 9999;
-      background: rgba(17, 17, 17, 0.96);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      padding: clamp(12px, 3.5vw, 16px) clamp(14px, 4vw, 20px);
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(12px, 3.5vw, 16px));
-      display: flex;
-      align-items: center;
-      gap: clamp(10px, 3vw, 14px);
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* ─── Welcome / Install Splash ─── */
+    .splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: clamp(24px, 6vw, 40px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(24px, 6vw, 40px));
+      transition: opacity 0.4s, visibility 0.4s;
     }
-    .install-banner.show { transform: translateY(0); }
+    .splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-    .install-banner .ib-icon {
-      width: clamp(40px, 11vw, 48px);
-      height: clamp(40px, 11vw, 48px);
-      border-radius: clamp(10px, 3vw, 12px);
-      flex-shrink: 0;
+    .splash .sp-icon {
+      width: clamp(72px, 20vw, 96px);
+      height: clamp(72px, 20vw, 96px);
+      border-radius: clamp(18px, 5vw, 24px);
+      margin-bottom: clamp(16px, 4vw, 24px);
     }
-
-    .install-banner .ib-text {
-      flex: 1; min-width: 0;
+    .splash .sp-brand {
+      font-size: clamp(28px, 8vw, 38px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #e11d48, #f43f5e, #fb7185);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: clamp(6px, 1.5vw, 10px);
     }
-    .install-banner .ib-title {
-      font-size: clamp(13px, 3.8vw, 15px);
-      font-weight: 700;
-      color: #fff;
+    .splash .sp-tagline {
+      font-size: clamp(13px, 3.8vw, 16px);
+      color: rgba(255,255,255,0.55);
+      max-width: 280px;
+      line-height: 1.5;
+      margin-bottom: clamp(32px, 8vw, 48px);
     }
-    .install-banner .ib-sub {
-      font-size: clamp(10px, 2.8vw, 12px);
-      color: rgba(255,255,255,0.5);
-      margin-top: 2px;
-    }
-
-    .install-banner .ib-install {
-      padding: clamp(8px, 2.2vw, 10px) clamp(16px, 4.5vw, 22px);
-      border: none;
-      border-radius: clamp(8px, 2.5vw, 10px);
+    .splash .sp-install {
+      width: 100%; max-width: 300px;
+      padding: clamp(14px, 4vw, 18px);
+      border: none; border-radius: clamp(12px, 3.5vw, 16px);
       background: linear-gradient(135deg, #e11d48, #f43f5e);
       color: #fff;
-      font-size: clamp(11px, 3vw, 13px);
+      font-size: clamp(15px, 4.2vw, 18px);
       font-weight: 700;
       cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
       transition: transform 0.1s;
-    }
-    .install-banner .ib-install:active { transform: scale(0.96); }
-
-    .install-banner .ib-close {
-      width: 28px; height: 28px;
-      border: none; background: none;
-      color: rgba(255,255,255,0.4);
-      font-size: 18px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-
-    /* ─── iOS Share Instructions Modal ─── */
-    .ios-modal-overlay {
-      position: fixed; inset: 0; z-index: 10000;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-    }
-    .ios-modal-overlay.show { display: flex; }
-
-    .ios-modal {
-      background: #1a1a1a;
-      border-radius: 16px 16px 0 0;
-      padding: clamp(20px, 5vw, 28px);
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(20px, 5vw, 28px));
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-    }
-    .ios-modal .ios-title {
-      font-size: clamp(16px, 4.5vw, 19px);
-      font-weight: 700;
       margin-bottom: clamp(12px, 3vw, 16px);
     }
-    .ios-modal .ios-steps {
+    .splash .sp-install:active { transform: scale(0.97); }
+    .splash .sp-skip {
+      background: none; border: none;
+      color: rgba(255,255,255,0.35);
+      font-size: clamp(12px, 3.2vw, 14px);
+      cursor: pointer;
+      padding: 8px 16px;
+    }
+    .splash .sp-skip:active { color: rgba(255,255,255,0.5); }
+
+    /* ─── iOS Share Instructions (inside splash) ─── */
+    .splash .sp-ios-steps {
+      display: none;
       text-align: left;
+      width: 100%; max-width: 300px;
+      background: rgba(255,255,255,0.06);
+      border-radius: clamp(12px, 3.5vw, 16px);
+      padding: clamp(16px, 4vw, 22px);
+      margin-bottom: clamp(16px, 4vw, 22px);
       font-size: clamp(13px, 3.5vw, 15px);
       color: rgba(255,255,255,0.75);
-      line-height: 1.8;
+      line-height: 2;
     }
-    .ios-modal .ios-steps b { color: #fff; }
-    .ios-modal .ios-close {
-      margin-top: clamp(16px, 4vw, 22px);
-      padding: clamp(10px, 3vw, 14px) clamp(32px, 9vw, 48px);
+    .splash .sp-ios-steps.show { display: block; }
+    .splash .sp-ios-steps b { color: #fff; }
+
+    /* ─── Floating re-install mini button ─── */
+    .install-fab {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 4vw, 22px));
+      left: clamp(12px, 3vw, 16px);
+      z-index: 8000;
+      width: clamp(40px, 11vw, 48px);
+      height: clamp(40px, 11vw, 48px);
+      border-radius: 50%;
+      background: rgba(225, 29, 72, 0.9);
+      backdrop-filter: blur(6px);
       border: none;
-      border-radius: clamp(10px, 3vw, 12px);
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      font-size: clamp(13px, 3.5vw, 15px);
-      font-weight: 600;
       cursor: pointer;
+      display: none;
+      align-items: center; justify-content: center;
+      transition: transform 0.2s;
     }
+    .install-fab.show { display: flex; }
+    .install-fab:active { transform: scale(0.92); }
+    .install-fab svg { width: 20px; height: 20px; fill: #fff; }
   </style>
 </head>
 <body>
@@ -466,29 +460,24 @@
   <!-- Feed -->
   <div class="feed" id="feed"></div>
 
-  <!-- Install / Save as Light App Banner -->
-  <div class="install-banner" id="installBanner">
-    <img class="ib-icon" src="/icons/icon-192.png" alt="XAFFX">
-    <div class="ib-text">
-      <div class="ib-title">Save XAFFX as Light App</div>
-      <div class="ib-sub">Quick access from your home screen</div>
+  <!-- Welcome / Install Splash -->
+  <div class="splash" id="splash">
+    <img class="sp-icon" src="/icons/icon-192.png" alt="XAFFX">
+    <div class="sp-brand">XAFFX</div>
+    <div class="sp-tagline">Swipe through deals. Watch reviews. Buy what you love.</div>
+    <div class="sp-ios-steps" id="iosSteps">
+      1. Tap the <b>Share</b> button (box with arrow) below<br>
+      2. Scroll and tap <b>"Add to Home Screen"</b><br>
+      3. Tap <b>"Add"</b> at the top right
     </div>
-    <button class="ib-install" id="installBtn">Install</button>
-    <button class="ib-close" id="installClose">&times;</button>
+    <button class="sp-install" id="splashInstall">Add to Home Screen</button>
+    <button class="sp-skip" id="splashSkip">Continue in browser</button>
   </div>
 
-  <!-- iOS Instructions Modal -->
-  <div class="ios-modal-overlay" id="iosModal">
-    <div class="ios-modal">
-      <div class="ios-title">Add XAFFX to Home Screen</div>
-      <div class="ios-steps">
-        1. Tap the <b>Share</b> button <span style="font-size:1.2em">&#9997;</span> at the bottom<br>
-        2. Scroll down and tap <b>"Add to Home Screen"</b><br>
-        3. Tap <b>"Add"</b> in the top right
-      </div>
-      <button class="ios-close" id="iosClose">Got it</button>
-    </div>
-  </div>
+  <!-- Floating install FAB (shows after splash is dismissed) -->
+  <button class="install-fab" id="installFab" title="Install XAFFX">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+  </button>
 
   <script>
     // ─── Service Worker Registration ───
@@ -496,73 +485,88 @@
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    // ─── PWA Install Prompt ───
+    // ─── Install / Splash Logic ───
     let deferredPrompt = null;
-    const installBanner = document.getElementById('installBanner');
-    const installBtn = document.getElementById('installBtn');
-    const installClose = document.getElementById('installClose');
-    const iosModal = document.getElementById('iosModal');
-    const iosClose = document.getElementById('iosClose');
+    const splash = document.getElementById('splash');
+    const splashInstall = document.getElementById('splashInstall');
+    const splashSkip = document.getElementById('splashSkip');
+    const iosSteps = document.getElementById('iosSteps');
+    const installFab = document.getElementById('installFab');
 
-    // Detect if running as installed PWA
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
-
-    // Detect iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const splashSeen = localStorage.getItem('xaffx-splash-seen');
 
-    // Don't show banner if already installed or user dismissed
-    const dismissed = sessionStorage.getItem('xaffx-install-dismissed');
+    // Capture Android/Chrome install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
 
-    if (!isStandalone && !dismissed) {
-      // Android/Chrome: capture beforeinstallprompt
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        showInstallBanner();
-      });
-
-      // iOS: show after a short delay (no native prompt)
-      if (isIOS) {
-        setTimeout(() => showInstallBanner(), 3000);
-      }
+    // Show/hide splash
+    if (isStandalone || splashSeen) {
+      // Already installed or seen before — skip splash, show FAB if not installed
+      splash.classList.add('hidden');
+      if (!isStandalone) installFab.classList.add('show');
     }
 
-    function showInstallBanner() {
-      installBanner.classList.add('show');
+    function dismissSplash() {
+      splash.classList.add('hidden');
+      localStorage.setItem('xaffx-splash-seen', '1');
+      if (!isStandalone) installFab.classList.add('show');
     }
 
-    function hideInstallBanner() {
-      installBanner.classList.remove('show');
-      sessionStorage.setItem('xaffx-install-dismissed', '1');
-    }
-
-    installBtn.addEventListener('click', async () => {
+    async function triggerInstall() {
       if (deferredPrompt) {
-        // Android/Chrome native install
         deferredPrompt.prompt();
         const result = await deferredPrompt.userChoice;
         deferredPrompt = null;
-        hideInstallBanner();
+        if (result.outcome === 'accepted') {
+          dismissSplash();
+          installFab.classList.remove('show');
+        }
       } else if (isIOS) {
-        // iOS: show share instructions
-        iosModal.classList.add('show');
+        iosSteps.classList.add('show');
+        splashInstall.textContent = 'Got it';
+        splashInstall.onclick = () => dismissSplash();
       } else {
-        // Fallback: guide user
-        iosModal.classList.add('show');
+        // Desktop or browser without install support — show generic instructions
+        iosSteps.innerHTML = '1. Open browser menu (<b>three dots</b>)<br>2. Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>';
+        iosSteps.classList.add('show');
+        splashInstall.textContent = 'Got it';
+        splashInstall.onclick = () => dismissSplash();
+      }
+    }
+
+    splashInstall.addEventListener('click', triggerInstall);
+    splashSkip.addEventListener('click', dismissSplash);
+
+    // Floating FAB: re-trigger install
+    installFab.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (result.outcome === 'accepted') installFab.classList.remove('show');
+      } else if (isIOS) {
+        // Re-show splash with iOS steps
+        iosSteps.classList.add('show');
+        splashInstall.textContent = 'Got it';
+        splashInstall.onclick = () => dismissSplash();
+        splash.classList.remove('hidden');
+      } else {
+        iosSteps.innerHTML = '1. Open browser menu (<b>three dots</b>)<br>2. Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>';
+        iosSteps.classList.add('show');
+        splashInstall.textContent = 'Got it';
+        splashInstall.onclick = () => dismissSplash();
+        splash.classList.remove('hidden');
       }
     });
 
-    installClose.addEventListener('click', hideInstallBanner);
-    iosClose.addEventListener('click', () => {
-      iosModal.classList.remove('show');
-      hideInstallBanner();
-    });
-    iosModal.addEventListener('click', (e) => {
-      if (e.target === iosModal) {
-        iosModal.classList.remove('show');
-        hideInstallBanner();
-      }
+    // Hide FAB once app is installed
+    window.addEventListener('appinstalled', () => {
+      installFab.classList.remove('show');
     });
 
     // ─── Mock Data ───
